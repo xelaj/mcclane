@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS user_chat (
 id SERIAL NOT NULL PRIMARY KEY,
 user_name VARCHAR ,
 chat_id INT ,
-warning BOOL,
+warning BOOL NOT NULL DEFAULT FALSE ,
 created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
