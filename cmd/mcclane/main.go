@@ -6,7 +6,13 @@ import (
 	"mcclane/internal/telegram"
 )
 
-const botTocken = 
+const (
+	botTocken = 
+	startMsg  = `Добро пожаловать в протестный бот.
+Отправьте трансляцию своей локации в месте скопления граждан и переодически проверяйте поступающую от нас информацию.
+Вы также можете "зарегистрироваться" (команда /reg) и указать несколько доверенных контактов, которым будет сообщено в случае обнаружения вас вне "горячей" зоны, что подразумевает задержание и транспортировку в ОВД.
+Команда /del удалит имеющуюся информацию`
+)
 
 type Dialog struct {
 	Choice     string
@@ -49,23 +55,22 @@ func main() {
 	}
 }
 func Answer(userID int, incomeMsg string) string {
+
 	switch incomeMsg {
 	case "/start":
 		NextDLG[userID] = &DLG
-		return `Добро пожаловать в протестный бот.
-	Отправьте свою локацию (трансляцию на 8-12 часов) в месте скопления граждан и переодически проверяйте поступающую от нас информацию.
-	Вы также можете "зарегистрироваться" (команда /reg) и указать несколько доверенных контактов, которым будет сообщено в случае обнаружения вас вне "горячей" зоны, что подразумевает задержание и транспортировку в ОВД`
+		return startMsg
 	default:
 
-		AnswerThree, ok := NextDLG[userID]
+		AnswerThree, ok := NextDLG[userID] // Если вложенный диалог закончен
 		if !ok {
-			AnswerThree = &DLG
+			AnswerThree = &DLG // Начнем дерево с начала
 		}
 
 		for _, currentAnswer := range *AnswerThree {
 			if currentAnswer.RegUser != nil {
-				fmt.Println(RegUser(userID, incomeMsg))
-				if len(currentAnswer.NextAnswer) > 0 {
+				fmt.Println(RegUser(userID, incomeMsg)) // Вызов внесения юзера в бд
+				if len(currentAnswer.NextAnswer) > 0 { 
 					NextDLG[userID] = &currentAnswer.NextAnswer
 					return currentAnswer.Answer
 				}
@@ -96,14 +101,14 @@ func loadContent() []Dialog {
 	DLG = []Dialog{
 		{
 			Choice: "/reg",
-			Answer: "Отправьте свое ФИО и дд.мм.гггг рождения, это информация, которую требуют в ОВД",
+			Answer: "Отправьте свое ФИО и ДД.ММ.ГГГГ рождения, это информация, которую требуют в ОВД",
 			NextAnswer: []Dialog{{
 				RegUser: RegUser,
 				Answer:  "Теперь отправьте телеграм логины лиц, которых следует оповестить при вашем задержании. Пример @durov, @navalny, @msvetov",
 				NextAnswer: []Dialog{
 					{
 						RegUser: RegUser,
-						Answer:  "Принято. Учтите, довереные лица должны хоть раз написать боту любое сообщение и не удлять диалог с ним",
+						Answer:  "Принято. Учтите, довереные лица должны хоть раз написать боту любое сообщение и не удалять диалог с ним",
 					}}}},
 		},
 		{
@@ -113,6 +118,7 @@ func loadContent() []Dialog {
 				{
 					DelUser: DelUser,
 					Choice:  "18",
+					Answer: "Ваши данные удалены.",
 				}},
 		},
 	}
