@@ -1,0 +1,7 @@
+BEGIN;
+
+DROP TABLE IF EXISTS coordinates;
+DROP TABLE IF EXISTS hot_location;
+DROP TABLE IF EXISTS user_chat;
+
+COMMIT;
