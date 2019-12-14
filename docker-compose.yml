@@ -1,0 +1,19 @@
+version: '3.1'
+
+services:
+  mcclane:
+    build: .
+    ports:
+      - "80:80"
+    env_file:
+      - ./env
+    depends_on:
+      - db
+    links:
+      - db
+  db:
+    image: postgres
+    env_file:
+      - ./env_pg
+    ports:
+      - "5432:5432"
