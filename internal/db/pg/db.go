@@ -31,7 +31,7 @@ func (db *DB) AddUserChat(ctx context.Context, uc model.UserChat) (int64, error)
 }
 
 func (db *DB) UpdateUserChatName(ctx context.Context, chatID int64, name string) error {
-	_, err := db.conn.ExecContext(ctx, `UPDATE user_chat SET name = $1 WHERE chatt_id = $2`, name, chatID)
+	_, err := db.conn.ExecContext(ctx, `UPDATE user_chat SET name = $1 WHERE chat_id = $2`, name, chatID)
 	if err != nil {
 		return err
 	}
@@ -39,11 +39,19 @@ func (db *DB) UpdateUserChatName(ctx context.Context, chatID int64, name string)
 }
 
 func (db *DB) AddCoordinates(ctx context.Context, uc model.Coordinates) (int64, error) {
-	res, err := db.conn.ExecContext(ctx, `INSERT INTO coordinates (latitude, longitude, user_chat_id, hot_location_id) VALUES ($1, $2, $3, $4)`, uc.Latitude, uc.Longitude, uc.UserChatID, uc.HotLocationID)
-	if err != nil {
-		return 0, err
+	if uc.HotLocationID == 0 {
+		res, err := db.conn.ExecContext(ctx, `INSERT INTO coordinates (latitude, longitude, user_chat_id) VALUES ($1, $2, $3)`, uc.Latitude, uc.Longitude, uc.UserChatID)
+		if err != nil {
+			return 0, err
+		}
+		return res.LastInsertId()
+	} else {
+		res, err := db.conn.ExecContext(ctx, `INSERT INTO coordinates (latitude, longitude, user_chat_id, hot_location_id) VALUES ($1, $2, $3, $4)`, uc.Latitude, uc.Longitude, uc.UserChatID, uc.HotLocationID)
+		if err != nil {
+			return 0, err
+		}
+		return res.LastInsertId()
 	}
-	return res.LastInsertId()
 }
 
 func (db *DB) AddHotLocation(ctx context.Context, uc model.HotLocation) (int64, error) {
@@ -100,6 +108,22 @@ func (db *DB) GetHotLocation(ctx context.Context, id int) (*model.HotLocation, e
 
 func (db *DB) GetUserChatByChatID(ctx context.Context, id int64) (*model.UserChat, error) {
 	rr, err := db.conn.QueryxContext(ctx, `SELECT * FROM user_chat WHERE chat_id=$1 ORDER BY id DESC LIMIT 1`, id)
+	if err != nil {
+		return nil, err
+	}
+	if rr.Next() {
+		res := new(model.UserChat)
+		err := rr.StructScan(res)
+		if err != nil {
+			return nil, err
+		}
+		return res, nil
+	}
+	return nil, NotFoundErr
+}
+
+func (db *DB) GetUserChatByUserName(ctx context.Context, name string) (*model.UserChat, error) {
+	rr, err := db.conn.QueryxContext(ctx, `SELECT * FROM user_chat WHERE user_name=$1 ORDER BY id DESC LIMIT 1`, name)
 	if err != nil {
 		return nil, err
 	}
@@ -187,4 +211,58 @@ func (db *DB) GetLastNews(ctx context.Context, id int) ([]*model.News, error) {
 		res = append(res, n)
 	}
 	return res, nil
+}
+
+func (db *DB) UpdateUserChatWarning(ctx context.Context, w bool, id int) error {
+	_, err := db.conn.ExecContext(ctx, `UPDATE user_chat SET warning = $1 WHERE id = $2`, w, id)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (db *DB) GetUserChatsWarning(ctx context.Context) ([]*model.UserChat, error) {
+	rr, err := db.conn.QueryxContext(ctx, `SELECT * FROM user_chat WHERE warning=true`)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]*model.UserChat, 0)
+	for rr.Next() {
+		res := new(model.UserChat)
+		err := rr.StructScan(res)
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+		result = append(result, res)
+	}
+	return result, nil
+}
+
+func (db *DB) AddContact(ctx context.Context, uc model.Contacts) (int64, error) {
+	res, err := db.conn.ExecContext(ctx, `INSERT INTO contacts (contact, user_chat_id) VALUES ($1, $2)`, uc.Contact, uc.UserChatID)
+	if err != nil {
+		return 0, err
+	}
+	return res.LastInsertId()
+}
+
+func (db *DB) GetContactsByUserChatID(ctx context.Context, id int) ([]*model.Contacts, error) {
+	rr, err := db.conn.QueryxContext(ctx, `SELECT * FROM contacts WHERE user_chat_id=$1`, id)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]*model.Contacts, 0)
+	for rr.Next() {
+		res := new(model.Contacts)
+		err := rr.StructScan(res)
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+		result = append(result, res)
+	}
+	return result, nil
 }
