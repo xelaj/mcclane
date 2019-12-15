@@ -136,3 +136,11 @@ func (db *DB) GetHotLocationByPoint(ctx context.Context, lat, lon float64) (*mod
 	}
 	return nil, NotFoundErr
 }
+
+func (db *DB) AddNews(ctx context.Context, uc model.News) (int64, error) {
+	res, err := db.conn.ExecContext(ctx, `INSERT INTO news (text, hot_location_id) VALUES ($1, $2)`, uc.Text, uc.HotLocationID)
+	if err != nil {
+		return 0, err
+	}
+	return res.LastInsertId()
+}
