@@ -5,6 +5,7 @@ id SERIAL NOT NULL PRIMARY KEY,
 user_name VARCHAR ,
 chat_id INT ,
 warning BOOL NOT NULL DEFAULT FALSE ,
+name VARCHAR ,
 created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
